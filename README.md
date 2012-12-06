@@ -1,5 +1,5 @@
 
-# ThreadPool
+# ThreadPool [![Build Status](https://travis-ci.org/alienscience/threadpool.png)](https://travis-ci.org/alienscience/threadpool)
 
 Complementary class to the [ThreadPoolExecutor](http://docs.oracle.com/javase/6/docs/api/java/util/concurrent/ThreadPoolExecutor.html)
 that provides a bounded version of

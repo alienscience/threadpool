@@ -9,4 +9,5 @@ This class behaves differently to the ThreadPoolExecutor in that threads are cre
 queued. However, jobs are queued AFTER the maximum number of threads has been reached. These differences in
  behaviour makes the ThreadPool more suitable for relatively long lasting jobs, such as blocking IO for example.
 
-
+This code is MIT licenced. At the moment it is not pushed to a Maven repository but I plan to do this once test coverage
+improves and I've used it a bit more.

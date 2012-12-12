@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * An alternative to {@link ThreadPoolExecutor} that queues <i>after</i> hitting thread limits and also
@@ -27,6 +28,7 @@ public class ThreadPool extends AbstractExecutorService {
 
     // State that does not require locking
     private final SynchronousQueue<Runnable> idleChannel;
+    private final AtomicInteger numWorkers;
     private final Set<WorkerThread> workers;
     private final AtomicBoolean shutdown;
     private final CountDownLatch terminate;
@@ -83,6 +85,7 @@ public class ThreadPool extends AbstractExecutorService {
         this.rejectedHandler = rejectedHandler;
 
         this.idleChannel = new SynchronousQueue<Runnable>();
+        this.numWorkers = new AtomicInteger(0);
         this.workers = Collections.newSetFromMap(new ConcurrentHashMap<WorkerThread, Boolean>(maximumPoolSize));
         this.shutdown = new AtomicBoolean(false);
         this.terminate = new CountDownLatch(1);
@@ -151,10 +154,11 @@ public class ThreadPool extends AbstractExecutorService {
             }
 
             // If this point is reached the worker is exiting
+            numWorkers.decrementAndGet();
             workers.remove(this);
 
             // Check for thread pool termination
-            if (shutdown.get() && workers.isEmpty()) terminate.countDown();
+            if (shutdown.get() && numWorkers.get() == 0) terminate.countDown();
         }
     }
 
@@ -182,18 +186,21 @@ public class ThreadPool extends AbstractExecutorService {
     }
 
     // Create a new worker thread, returns true on success
-    // Called with lock obtained
     private boolean createNewWorker(Runnable command) {
 
-        // Can a new thread be created?
-        int numThreads = workers.size();
-        if (numThreads >= maximumPoolSize) return false;
+        while (true) {
+            // Can a new thread be created?
+            int numThreads = numWorkers.get();
+            if (numThreads >= maximumPoolSize) return false;
 
-        // Create the new worker
-        WorkerThread worker = new WorkerThread(command);
-        workers.add(worker);
-        worker.startThread(threadFactory);
-        return true;
+            // Create the new worker
+            if (numWorkers.compareAndSet(numThreads, numThreads + 1) ) {
+                WorkerThread worker = new WorkerThread(command);
+                workers.add(worker);
+                worker.startThread(threadFactory);
+                return true;
+            }
+        }
     }
 
     // Reject the given job
@@ -259,7 +266,7 @@ public class ThreadPool extends AbstractExecutorService {
     }
 
     public int getNumThreads() {
-        return workers.size();
+        return numWorkers.get();
     }
 
     //---------- RejectedHandlers ----------------

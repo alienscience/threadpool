@@ -18,7 +18,7 @@ queued. However, jobs are queued AFTER the maximum number of threads has been re
             @Override
             public void run() {
                 // Do some job
-            }
+            }});
 ```
 
 This code is MIT licenced. At the moment it is not pushed to a Maven repository but I plan to do this once test coverage

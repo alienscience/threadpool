@@ -4,13 +4,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -21,7 +19,7 @@ import static org.junit.Assert.assertTrue;
  * TODO check test coverage
  */
 @RunWith(Parameterized.class)
-public class ThreadPoolTest {
+public class ParameterizedTests {
 
     // Latches used for synchronization
     volatile CountDownLatch start;
@@ -50,17 +48,18 @@ public class ThreadPoolTest {
                 {ThreadPool.newCachedThreadPool(1)},
                 {ThreadPool.newCachedThreadPool(2)},
                 {ThreadPool.newCachedThreadPool(32)},
+                {ThreadPool.newCachedThreadPool(128)}
         };
         return Arrays.asList(data);
     }
 
-    public ThreadPoolTest(ThreadPool pool) {
+    public ParameterizedTests(ThreadPool pool) {
         this.pool = new ThreadPool(pool);
     }
 
     @Test
     public void testJobsAreSubmitted() throws InterruptedException {
-        final int numJobs = 256;
+        final int numJobs = 1024;
         start = new CountDownLatch(1);
         finish = new CountDownLatch(numJobs);
 
@@ -80,17 +79,20 @@ public class ThreadPoolTest {
     }
 
     @Test
-    public void testMultiThreadedSubmit() throws InterruptedException {
+    public void testMultiThreadedSubmit() throws InterruptedException, TimeoutException, ExecutionException {
+
         final int numThreads = 8;
-        final int jobsPerThread = 256;
+        final int jobsPerThread = 1024;
         final int totalJobs = numThreads * jobsPerThread;
         start = new CountDownLatch(1);
         finish = new CountDownLatch(totalJobs);
 
         // Submit jobs using different threads
-        Executor submitPool = Executors.newFixedThreadPool(numThreads);
+        ExecutorService submitPool = Executors.newFixedThreadPool(numThreads);
+        List<Future> submissions = new ArrayList<Future>();
+
         for (int i = 0; i < numThreads; i++) {
-             submitPool.execute(new Runnable() {
+             Future future = submitPool.submit(new Runnable() {
                  @Override
                  public void run() {
                      for (int j = 0; j < jobsPerThread; j++) {
@@ -98,7 +100,19 @@ public class ThreadPoolTest {
                      }
                  }
              });
+            submissions.add(future);
         }
+
+        // Wait for the submissions to complete
+        for (Future future : submissions ) {
+            future.get(10, TimeUnit.SECONDS);
+        }
+
+        // Check that the maximum number of threads has been created
+        assertEquals(pool.getMaximumPoolSize(), pool.getNumThreads());
+
+        // Check that jobs are queued
+        assertEquals(totalJobs, pool.getNumThreads() + pool.getQueueSize());
 
         // Run the jobs
         start.countDown();
@@ -109,7 +123,7 @@ public class ThreadPoolTest {
 
     @Test
     public void testShutdown() throws InterruptedException {
-        final int numJobs = 256;
+        final int numJobs = 1024;
         start = new CountDownLatch(1);
         finish = new CountDownLatch(numJobs);
 
@@ -136,7 +150,7 @@ public class ThreadPoolTest {
 
     @Test
     public void testShutdownNow() throws InterruptedException {
-        final int numJobs = 256;
+        final int numJobs = 1024;
         start = new CountDownLatch(1);
         finish = new CountDownLatch(numJobs);
 
@@ -157,4 +171,19 @@ public class ThreadPoolTest {
         // Check termination
         assertTrue(pool.awaitTermination(100, TimeUnit.MILLISECONDS));
     }
+
+    @Test
+    public void testConstantSubmit() throws InterruptedException {
+        final int numJobs = 256 * 1024;
+        start = new CountDownLatch(0);         // Run jobs without waiting
+        finish = new CountDownLatch(numJobs);
+
+        // Submit jobs
+        for (int i = 0; i < numJobs; i++) {
+            pool.submit(new Job());
+        }
+
+        assertTrue(finish.await(10, TimeUnit.SECONDS));
+    }
+    
 }

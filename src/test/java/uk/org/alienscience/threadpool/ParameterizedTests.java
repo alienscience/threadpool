@@ -87,10 +87,10 @@ public class ParameterizedTests {
 
         // Submit jobs using different threads
         ExecutorService submitPool = Executors.newFixedThreadPool(numThreads);
-        List<Future> submissions = new ArrayList<Future>();
+        List<Future<?>> submissions = new ArrayList<Future<?>>();
 
-        for (int i = 0; i < numThreads; i++) {
-             Future future = submitPool.submit(new Runnable() {
+	        for (int i = 0; i < numThreads; i++) {
+             Future<?> future = submitPool.submit(new Runnable() {
                  @Override
                  public void run() {
                      for (int j = 0; j < jobsPerThread; j++) {
@@ -102,7 +102,7 @@ public class ParameterizedTests {
         }
 
         // Wait for the submissions to complete
-        for (Future future : submissions ) {
+        for (Future<?> future : submissions ) {
             future.get(10, TimeUnit.SECONDS);
         }
 
@@ -136,6 +136,9 @@ public class ParameterizedTests {
         // No jobs should have been run
         assertEquals(numJobs, finish.getCount());
 
+        // This is a shutdown
+        assertTrue(pool.isShutdown());
+
         // Start the jobs
         start.countDown();
 
@@ -144,6 +147,50 @@ public class ParameterizedTests {
 
         // Check termination
         assertTrue(pool.awaitTermination(100, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testShutdownWithIdleWorkers() throws InterruptedException {
+        final int numJobs = pool.getMaximumPoolSize() - 1;
+        if (numJobs < 0) return;
+
+        start = new CountDownLatch(1);
+        finish = new CountDownLatch(numJobs);
+
+        // Submit jobs
+        for (int i = 0; i < numJobs; i++) {
+            pool.submit(new Job());
+        }
+
+        // Create an idle worker
+        final CountDownLatch workerIdle = new CountDownLatch(1);
+        pool.submit(new Runnable() {
+            @Override
+            public void run() {
+                workerIdle.countDown();
+            }
+        });
+
+        workerIdle.await(10, TimeUnit.SECONDS);
+
+        // There should be an idle thread
+        assertEquals(numJobs + 1, pool.getNumThreads());
+
+        // Shutdown
+        pool.shutdown();
+
+        // Check that the idle thread is shutdown
+        for (int i = 0; i < 10000; i++) {
+            if (numJobs == pool.getNumThreads()) break;
+            start.await(10, TimeUnit.MILLISECONDS);
+        }
+
+        assertEquals(numJobs, pool.getNumThreads());
+
+        // Check that new threads are not created
+        pool.submit(new Job());
+        assertEquals(numJobs, pool.getNumThreads());
+
     }
 
     @Test
@@ -168,6 +215,8 @@ public class ParameterizedTests {
 
         // Check termination
         assertTrue(pool.awaitTermination(100, TimeUnit.MILLISECONDS));
+        assertTrue(pool.isTerminated());
+
     }
 
     @Test

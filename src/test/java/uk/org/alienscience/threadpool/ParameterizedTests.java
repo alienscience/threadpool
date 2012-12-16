@@ -15,8 +15,6 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * ThreadPool unit tests
- * TODO test pool is actually threading
- * TODO check test coverage
  */
 @RunWith(Parameterized.class)
 public class ParameterizedTests {
@@ -175,7 +173,7 @@ public class ParameterizedTests {
     @Test
     public void testConstantSubmit() throws InterruptedException {
         final int numJobs = 256 * 1024;
-        start = new CountDownLatch(0);         // Run jobs without waiting
+        start = null;                          // Run jobs without waiting
         finish = new CountDownLatch(numJobs);
 
         // Submit jobs

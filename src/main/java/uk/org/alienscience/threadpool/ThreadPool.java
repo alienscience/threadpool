@@ -83,6 +83,7 @@ public class ThreadPool extends AbstractExecutorService {
                       BlockingQueue<Runnable> workQueue,
                       ThreadFactory threadFactory,
                       RejectedHandler rejectedHandler) {
+
         this.maximumPoolSize = maximumPoolSize;
         this.keepAliveTime = keepAliveTime;
         this.timeUnit = timeUnit;
@@ -301,12 +302,24 @@ public class ThreadPool extends AbstractExecutorService {
         },
         /**
          * Discard the oldest job at the head of the queue
+         * Throws a {@link RejectedExecutionException} if the workQueue is too small to support this.
          */
         DISCARD_OLDEST {
             @Override
             public void rejectedExecution(Runnable command, ThreadPool threadPool) {
-                threadPool.workQueue.poll();
-                threadPool.execute(command);
+
+                while (threadPool.workQueue.size() > 0) {
+                    // Remove the oldest job from the work queue
+                    Runnable oldCommand = threadPool.workQueue.poll();
+
+                    // Add the job to the work queue
+                    if (threadPool.workQueue.offer(command)) return;
+
+                    // Ensure that there are no idle threads at this point
+                    threadPool.idleChannel.offer(oldCommand);
+                }
+
+                throw new RejectedExecutionException("workQueue is too small to support DISCARD_OLDEST");
             }
         }
     }

@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ThreadPool extends AbstractExecutorService {
 
-    private static final RejectedHandler defaultRejectionPolicy = Policy.ABORT;
+    public static final RejectedHandler defaultRejectionPolicy = Policy.ABORT;
 
     // --- Configuration ---
     private final long keepAliveTime;

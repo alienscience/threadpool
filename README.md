@@ -21,5 +21,33 @@ queued. However, jobs are queued AFTER the maximum number of threads has been re
             }});
 ```
 
-This code is MIT licenced. At the moment it is not pushed to a Maven repository but I plan to do this once test coverage
-improves and I've used it a bit more.
+This code is MIT licenced.
+
+Currently, the threadpool is only available on the OSS sonatype repository. It is hoped that this will move the Maven Central
+when it gets more mature.
+
+```xml
+   <dependency>
+      <groupId>uk.org.alienscience</groupId>
+      <artifactId>threadpool</artifactId>
+      <version>1.0-SNAPSHOT</version>
+   </dependency>
+```
+
+To include the OSS sonatype repository, you can add the following to your pom.xml:
+
+```xml
+   <repositories>
+       <repository>
+           <id>sonatype-oss-public</id>
+           <url>https://oss.sonatype.org/content/groups/public/</url>
+           <releases>
+               <enabled>true</enabled>
+           </releases>
+           <snapshots>
+              <enabled>true</enabled>
+           </snapshots>
+       </repository>
+  </repositories>
+```
+

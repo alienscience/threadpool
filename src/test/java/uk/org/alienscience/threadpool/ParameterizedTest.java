@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
  * ThreadPool unit tests
  */
 @RunWith(Parameterized.class)
-public class ParameterizedTests {
+public class ParameterizedTest {
 
     // Latches used for synchronization
     volatile CountDownLatch start;
@@ -51,7 +51,7 @@ public class ParameterizedTests {
         return Arrays.asList(data);
     }
 
-    public ParameterizedTests(ThreadPool pool) {
+    public ParameterizedTest(ThreadPool pool) {
         this.pool = new ThreadPool(pool);
     }
 

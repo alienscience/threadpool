@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests of a cached thread pool
  */
-public class CachedThreadPoolTests {
+public class CachedThreadPoolTest {
 
     private static final long timeout = 200;
 

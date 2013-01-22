@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 /**
  * Tests of the ThreadPool rejection policy
  */
-public class RejectionPolicyTests {
+public class RejectionPolicyTest {
 
     private CountDownLatch start;
     private CountDownLatch finish;

@@ -50,10 +50,11 @@ public class ThreadPool extends AbstractExecutorService {
      * that queues jobs when the maximumPoolSize is reached.
      */
     public static ExecutorService newCachedThreadPool(int maximumPoolSize) {
-        return new ThreadPool(maximumPoolSize, 60L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(),
-                Executors.defaultThreadFactory(),
-                defaultRejectionPolicy);
+        return new ThreadPool(maximumPoolSize, 
+                              60L, TimeUnit.SECONDS,
+                              new LinkedBlockingQueue<Runnable>(),
+                              Executors.defaultThreadFactory(),
+                              defaultRejectionPolicy);
     }
 
     /**
@@ -61,10 +62,11 @@ public class ThreadPool extends AbstractExecutorService {
      * that queues jobs when the maximumPoolSize is reached.
      */
     public static ExecutorService newCachedThreadPool(int maximumPoolSize, ThreadFactory threadFactory) {
-        return new ThreadPool(maximumPoolSize, 60L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<Runnable>(),
-                threadFactory,
-                defaultRejectionPolicy);
+        return new ThreadPool(maximumPoolSize, 
+                              60L, TimeUnit.SECONDS,
+                              new LinkedBlockingQueue<Runnable>(),
+                              threadFactory,
+                              defaultRejectionPolicy);
     }
 
     /**
@@ -107,11 +109,11 @@ public class ThreadPool extends AbstractExecutorService {
      */
     ThreadPool(ThreadPool pool) {
         this(pool.maximumPoolSize,
-                pool.keepAliveTime,
-                pool.timeUnit,
-                pool.workQueue,
-                pool.threadFactory,
-                pool.rejectedHandler);
+             pool.keepAliveTime,
+             pool.timeUnit,
+             pool.workQueue,
+             pool.threadFactory,
+             pool.rejectedHandler);
     }
 
     // ---------- A worker thread that does the actual execution --------------
@@ -219,7 +221,7 @@ public class ThreadPool extends AbstractExecutorService {
         shutdown.set(true);
 
         // Shutdown all the idle workers
-        while (idleChannel.offer(Signal.SHUTDOWN_WORKER)) { }
+        while (idleChannel.offer(Signal.SHUTDOWN_WORKER)) {} // NOPMD
     }
 
     /**
@@ -306,7 +308,11 @@ public class ThreadPool extends AbstractExecutorService {
          */
         DISCARD_OLDEST {
             @Override
-            public void rejectedExecution(Runnable command, ThreadPool threadPool) {
+            @edu.umd.cs.findbugs.annotations.SuppressWarnings(
+                value="RV_RETURN_VALUE_IGNORED_BAD_PRACTICE", 
+                justification="oldCommand is documented to be discarded")
+            public void rejectedExecution(Runnable command, ThreadPool threadPool) 
+                throws RejectedExecutionException {
 
                 while (threadPool.workQueue.size() > 0) {
                     // Remove the oldest job from the work queue
